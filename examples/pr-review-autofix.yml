@@ -1,0 +1,56 @@
+# Review every pull request with a Blocks agent, then chain a second session
+# that reads the first session's transcript and fixes what it rated highly.
+#
+# Copy this into .github/workflows/ in your own repository and set a
+# BLOCKS_API_KEY secret.
+name: PR Review + Autofix
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  run_pull_request:
+    name: Review
+    runs-on: ubuntu-latest
+    # Step outputs are step-scoped; they have to be re-exported at job level
+    # before another job can read them through `needs`.
+    outputs:
+      session_id: ${{ steps.review.outputs.session_id }}
+      status: ${{ steps.review.outputs.status }}
+    steps:
+      - id: review
+        uses: BlocksOrg/blocks-ci-sessions@v1
+        with:
+          blocks_api_key: ${{ secrets.BLOCKS_API_KEY }}
+          agent: claude
+          timeout_minutes: 30
+          prompt: |
+            Review pull request ${{ github.event.pull_request.html_url }}.
+            Leave inline comments, and give each finding a severity rating out of 10.
+
+  autofix:
+    name: Autofix
+    needs: run_pull_request
+    runs-on: ubuntu-latest
+    steps:
+      - id: fix
+        uses: BlocksOrg/blocks-ci-sessions@v1
+        with:
+          blocks_api_key: ${{ secrets.BLOCKS_API_KEY }}
+          agent: claude
+          timeout_minutes: 30
+          prompt: |
+            A PR review has run in the ${{ needs.run_pull_request.outputs.session_id }} session.
+            Fetch that session's detailed transcript and fix every issue rated above 7/10.
+            If there are none, stop immediately without making any changes.
+            Push the fixes to the ${{ github.event.pull_request.head.ref }} branch.
+
+      - name: Report
+        run: |
+          echo "Autofix session: ${{ steps.fix.outputs.session_html_url }}"
+          echo "Pull requests touched: ${{ steps.fix.outputs.pull_requests }}"

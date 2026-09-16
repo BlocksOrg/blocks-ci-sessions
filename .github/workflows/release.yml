@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to point the floating major tag at (e.g. v1.2.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  major-tag:
+    name: Move the floating major tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # `uses: BlocksOrg/blocks-ci-sessions@v1` resolves through a floating major
+      # tag, so every release has to drag it forward.
+      - name: Retarget the major tag
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_TAG" =~ ^v([0-9]+)\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Expected a vMAJOR.MINOR.PATCH tag, got '$RELEASE_TAG'."
+            exit 1
+          fi
+          MAJOR="v${BASH_REMATCH[1]}"
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git tag -f "$MAJOR" "$RELEASE_TAG"
+          git push --force origin "refs/tags/$MAJOR"
+          echo "$MAJOR now points at $RELEASE_TAG" >> "$GITHUB_STEP_SUMMARY"
