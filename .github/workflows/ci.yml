@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Lint, type-check and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run type-check
+      - run: npm run test
+
+  dist:
+    name: Committed bundle is up to date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      # The runner executes dist directly, so a stale bundle silently
+      # ships old behaviour. Fail the PR instead.
+      - name: Fail if dist is stale
+        run: |
+          if ! git diff --quiet --exit-code dist; then
+            echo "::error::dist is out of date — run 'npm run build' and commit the result."
+            git diff --stat dist
+            exit 1
+          fi
+
+  e2e:
+    name: End-to-end against a mock API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+      - name: Start the mock Blocks API
+        run: |
+          node scripts/mock-api.mjs > /tmp/mock-api.log 2>&1 &
+          echo $! > /tmp/mock-api.pid
+          for _ in $(seq 1 30); do
+            if curl -fsS -o /dev/null -X POST http://127.0.0.1:3999/rest/v1/sessions \
+                 -H 'authorization: ApiKey test-key' \
+                 -H 'content-type: application/json' \
+                 -d '{"message":"ping","agent_name":"claude"}'; then
+              echo "mock api is up"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::mock api never became ready"
+          cat /tmp/mock-api.log
+          exit 1
+
+      - name: Run the action
+        id: session
+        uses: ./
+        with:
+          blocks_api_key: test-key
+          prompt: Review this pull request.
+          agent: claude
+          api_base_url: http://127.0.0.1:3999
+          poll_interval_seconds: 1
+          timeout_minutes: 2
+
+      - name: Assert the outputs
+        env:
+          SESSION_ID: ${{ steps.session.outputs.session_id }}
+          THREAD_ID: ${{ steps.session.outputs.thread_id }}
+          FINAL_MESSAGE: ${{ steps.session.outputs.final_message }}
+          PULL_REQUESTS: ${{ steps.session.outputs.pull_requests }}
+          STATUS: ${{ steps.session.outputs.status }}
+        run: |
+          set -euo pipefail
+          test "$SESSION_ID" = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+          test "$THREAD_ID" = "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff"
+          test "$FINAL_MESSAGE" = "Reviewed the PR and left 3 comments."
+          test "$PULL_REQUESTS" = '["https://github.com/BlocksOrg/blocks-ci-sessions/pull/1"]'
+          test "$STATUS" = "completed"
+          echo "outputs look right"
+
+      - name: Run the action again, resuming the session
+        id: resume
+        uses: ./
+        with:
+          blocks_api_key: test-key
+          prompt: Also check the migrations.
+          session_id: ${{ steps.session.outputs.session_id }}
+          api_base_url: http://127.0.0.1:3999
+          poll_interval_seconds: 1
+          timeout_minutes: 2
+
+      - name: Assert the resume outputs
+        env:
+          SESSION_ID: ${{ steps.resume.outputs.session_id }}
+          THREAD_ID: ${{ steps.resume.outputs.thread_id }}
+          STATUS: ${{ steps.resume.outputs.status }}
+        run: |
+          set -euo pipefail
+          test "$SESSION_ID" = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+          # A follow-up opens a new thread, so this must differ from the first run.
+          test "$THREAD_ID" = "cccccccc-dddd-4eee-8fff-000000000000"
+          test "$STATUS" = "completed"
+          echo "resume outputs look right"
+
+      - name: Stop the mock Blocks API
+        if: always()
+        run: kill "$(cat /tmp/mock-api.pid)" || true

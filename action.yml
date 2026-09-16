@@ -1,0 +1,84 @@
+name: 'Blocks Agent Session'
+description: >-
+  Start a Blocks agent session, wait for the agent's final message, and expose
+  the session id so later jobs can chain off it.
+author: 'Blocks'
+
+branding:
+  icon: 'cpu'
+  color: 'purple'
+
+inputs:
+  blocks_api_key:
+    description: 'Blocks workspace API key. Pass it from a secret, e.g. secrets.BLOCKS_API_KEY.'
+    required: true
+  prompt:
+    description: 'The message sent to the agent.'
+    required: true
+  agent:
+    description: >-
+      Core agent alias: claude, codex, gemini, opencode, cursor, kimi or sisyphus.
+      Mutually exclusive with agent_id. Ignored when session_id is set.
+      There is deliberately no client-side default — see the README.
+    required: false
+    default: ''
+  agent_id:
+    description: >-
+      UUID of a custom workspace agent. Mutually exclusive with agent.
+      Ignored when session_id is set.
+    required: false
+    default: ''
+  session_id:
+    description: >-
+      Resume an existing session: posts the prompt as a follow-up message to this
+      session instead of creating a new one.
+    required: false
+    default: ''
+  title:
+    description: 'Optional session title (max 200 characters). Only used when creating a session.'
+    required: false
+    default: ''
+  session_group_id:
+    description: 'Optional session group UUID. Only used when creating a session.'
+    required: false
+    default: ''
+  is_private:
+    description: 'Create the session as private (hidden from other workspace members).'
+    required: false
+    default: 'false'
+  timeout_minutes:
+    description: 'How long to wait for the agent final message before giving up.'
+    required: false
+    default: '30'
+  poll_interval_seconds:
+    description: >-
+      Seconds between final-message polls. The API allows 100 requests per minute
+      per key across all concurrent jobs, so raise this if you fan out widely.
+    required: false
+    default: '5'
+  fail_on_timeout:
+    description: 'Fail the step when the timeout is hit. Set to false to warn and continue.'
+    required: false
+    default: 'true'
+  api_base_url:
+    description: 'Blocks REST API base URL.'
+    required: false
+    default: 'https://api.blocks.team'
+
+outputs:
+  session_id:
+    description: 'The Blocks session id. Set before polling starts, so it is available even on timeout.'
+  thread_id:
+    description: 'The thread this run created inside the session.'
+  final_message:
+    description: 'The agent final message text. Empty when the step timed out.'
+  session_html_url:
+    description: 'Link to the session in the Blocks dashboard.'
+  pull_requests:
+    description: 'JSON array of pull request URLs the session touched.'
+  status:
+    description: 'Either "completed" or "timed_out".'
+
+runs:
+  using: 'node24'
+  main: 'dist/index.mjs'
