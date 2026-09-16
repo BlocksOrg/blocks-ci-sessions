@@ -87,9 +87,9 @@ jobs:
           blocks_api_key: ${{ secrets.BLOCKS_API_KEY }}
           agent: claude
           prompt: |
-            A PR review has run in the ${{ needs.review.outputs.session_id }} session.
-            Fetch that session's transcript and fix every issue rated above 7/10.
-            If there are none, stop immediately.
+            A PR review has run on the PR ${{ github.event.pull_request.html_url }} associated with
+            the session ${{ needs.review.outputs.session_id }}.
+            Refer to the commented issues and address them.
 ```
 
 See [`examples/pr-review-autofix.yml`](./examples/pr-review-autofix.yml) for the full workflow.
