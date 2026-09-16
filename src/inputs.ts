@@ -59,9 +59,11 @@ function uuid(raw: RawInputs, key: string): string | undefined {
 /**
  * Validates and normalises the `with:` block.
  *
- * Note there is no default for `agent`. A client-side default would silently
- * override whatever the workspace has configured, so an omitted agent is passed
- * through as omitted and the API decides.
+ * Creating a session needs an agent: `POST /rest/v1/sessions` rejects the
+ * request unless one of `agent_name`, `agent_id` or `profile` is present, and
+ * this action only exposes the first two. There is deliberately no default —
+ * a hard-coded one would silently override whatever the workspace has
+ * configured — so the caller has to pick, and we fail before touching the API.
  */
 export function parseInputs(raw: RawInputs): ActionInputs {
   const apiKey = str(raw, 'blocks_api_key');
@@ -81,6 +83,12 @@ export function parseInputs(raw: RawInputs): ActionInputs {
     throw new InputError(
       `Input "agent" must be one of ${AGENT_ALIASES.join(', ')} — got "${agentRaw}". ` +
         'For a custom workspace agent use "agent_id" instead.',
+    );
+  }
+  if (!sessionId && !agentRaw && !agentId) {
+    throw new InputError(
+      `Input "agent" is required when creating a session — set it to one of ${AGENT_ALIASES.join(', ')}. ` +
+        '(Not needed when resuming via "session_id".)',
     );
   }
 

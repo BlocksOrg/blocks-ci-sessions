@@ -220,8 +220,8 @@ function describeFailure(error: unknown): string {
   if (error instanceof BlocksApiError && error.status === 422) {
     return (
       `${error.message}\n` +
-      `Hint: "agent" must be one of ${AGENT_ALIASES.join(', ')}, or set "agent_id" to a custom ` +
-      'workspace agent UUID. The API has no workspace-default fallback, so one of them is required.'
+      `Hint: "agent" must be one of ${AGENT_ALIASES.join(', ')}. ` +
+      'The API has no workspace-default fallback, so it is required when creating a session.'
     );
   }
   if (error instanceof BlocksApiError && error.status === 401) {

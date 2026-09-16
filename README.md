@@ -27,8 +27,7 @@ See [`examples/`](./examples) for complete, copy-paste workflows.
 | --- | --- | --- | --- |
 | `blocks_api_key` | ✅ | — | Workspace API key. Masked in logs via `core.setSecret`. |
 | `prompt` | ✅ | — | The message sent to the agent. |
-| `agent` | | — | One of `claude`, `codex`, `gemini`, `opencode`, `cursor`, `kimi`, `sisyphus`. |
-| `agent_id` | | — | UUID of a custom workspace agent. Mutually exclusive with `agent`. |
+| `agent` | ✅ | — | One of `claude`, `codex`, `gemini`, `opencode`, `cursor`, `kimi`, `sisyphus`. Not needed when resuming via `session_id`. |
 | `session_id` | | — | Resume: post `prompt` as a follow-up to an existing session. |
 | `title` | | — | Session title, max 200 characters. Creation only. |
 | `session_group_id` | | — | Group the session under an existing session group. Creation only. |
@@ -38,19 +37,17 @@ See [`examples/`](./examples) for complete, copy-paste workflows.
 | `fail_on_timeout` | | `true` | `false` warns and continues instead of failing the step. |
 | `api_base_url` | | `https://api.blocks.team` | Override the REST API base URL. |
 
-### `agent` is effectively required
+### Choosing an agent
 
-The action deliberately ships **no default agent**. A client-side default would silently
-override whatever your workspace has configured, and it would disagree with the platform's
-own fallback. `POST /rest/v1/sessions` currently requires one of `agent_name`, `agent_id` or
-`profile` and has no workspace-default fallback, so in practice you must set `agent` or
-`agent_id` on every run that creates a session.
+Every run that **creates** a session must set `agent`. The Blocks API rejects a session
+without one, and the action checks this before making any request so a misconfigured workflow
+fails fast with a clear message.
 
-If the API later gains a workspace-default fallback, omitting `agent` starts working on its
-own — the action needs no change.
+There is deliberately **no default agent**: a hard-coded one would silently override whatever
+your workspace has configured.
 
-`agent`/`agent_id` are ignored when `session_id` is set; a resumed session keeps the agent it
-was created with.
+`agent` is ignored when `session_id` is set; a resumed session keeps the agent it was created
+with.
 
 ## Outputs
 

@@ -18,14 +18,11 @@ inputs:
   agent:
     description: >-
       Core agent alias: claude, codex, gemini, opencode, cursor, kimi or sisyphus.
-      Mutually exclusive with agent_id. Ignored when session_id is set.
-      There is deliberately no client-side default — see the README.
+      Required when creating a session. Ignored when session_id is set. There is no default.
     required: false
     default: ''
   agent_id:
-    description: >-
-      UUID of a custom workspace agent. Mutually exclusive with agent.
-      Ignored when session_id is set.
+    description: 'UUID of a custom workspace agent, used in place of agent.'
     required: false
     default: ''
   session_id:
