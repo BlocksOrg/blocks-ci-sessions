@@ -10,6 +10,30 @@ permissions:
   contents: read
 
 jobs:
+  # Lints the workflow files themselves: unknown runner labels, bad expressions,
+  # shellcheck over every `run:` block. A workflow that fails to parse posts no
+  # check-run at all, so nothing else in this file would ever catch it.
+  actionlint:
+    name: Lint workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      # 1.7.8+ is required: earlier releases reject `runs.using: node24`.
+      ACTIONLINT_VERSION: 1.7.12
+      # sha256 of actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz, from the
+      # release's published checksums file.
+      ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install actionlint
+        run: |
+          tarball="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL -o "$tarball" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${tarball}"
+          echo "${ACTIONLINT_SHA256}  ${tarball}" | sha256sum --check --strict -
+          tar -xzf "$tarball" actionlint
+      - run: ./actionlint -color
+
   check:
     name: Lint, type-check and test
     runs-on: ubuntu-latest
