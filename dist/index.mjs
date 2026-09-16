@@ -20397,16 +20397,6 @@ function logUntrusted(text) {
   info(text);
   info(`::${token}::`);
 }
-function escapeHtml(value) {
-  const map = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  };
-  return value.replace(/[&<>"']/g, (char) => map[char]);
-}
 function formatDuration(ms) {
   if (ms < 6e4) return `${Math.round(ms / 1e3)}s`;
   const minutes = ms / 6e4;
@@ -20502,14 +20492,12 @@ function publish(partial) {
 }
 async function writeSummary(result) {
   try {
-    const summary2 = summary.addHeading("Blocks agent session", 3).addLink(escapeHtml(result.session_id), escapeHtml(result.session_html_url));
-    const pullRequestLinks = result.pull_requests.filter((url) => /^https:\/\//i.test(url)).map((url) => {
-      const safe = escapeHtml(url);
-      return `<a href="${safe}">${safe}</a>`;
-    });
-    if (pullRequestLinks.length) summary2.addList(pullRequestLinks);
+    const summary2 = summary.addHeading("Blocks agent session", 3).addLink(result.session_id, result.session_html_url);
+    if (result.pull_requests.length) {
+      summary2.addList(result.pull_requests.map((url) => `<a href="${url}">${url}</a>`));
+    }
     if (result.final_message) {
-      summary2.addHeading("Final message", 4).addQuote(escapeHtml(result.final_message));
+      summary2.addHeading("Final message", 4).addQuote(result.final_message);
     }
     await summary2.write();
   } catch (error2) {
@@ -20579,7 +20567,6 @@ if (entrypoint && isEntrypoint(entrypoint)) {
   void main();
 }
 export {
-  escapeHtml,
   formatDuration,
   logUntrusted,
   main,

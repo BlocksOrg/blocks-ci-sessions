@@ -42,18 +42,6 @@ export function logUntrusted(text: string): void {
   core.info(`::${token}::`);
 }
 
-/** The job summary is raw HTML; `@actions/core` does not escape for us. */
-export function escapeHtml(value: string): string {
-  const map: Record<string, string> = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-  };
-  return value.replace(/[&<>"']/g, (char) => map[char]);
-}
-
 /** `timeout_minutes` accepts fractions, so "0 minutes" is a real possibility. */
 export function formatDuration(ms: number): string {
   if (ms < 60_000) return `${Math.round(ms / 1_000)}s`;
@@ -178,20 +166,14 @@ function publish(partial: Partial<RunResult>): void {
 
 async function writeSummary(result: RunResult): Promise<void> {
   try {
-    // Everything below came from the API or the agent, so it is escaped, and
-    // only https links are rendered as anchors.
     const summary = core.summary
       .addHeading('Blocks agent session', 3)
-      .addLink(escapeHtml(result.session_id), escapeHtml(result.session_html_url));
-    const pullRequestLinks = result.pull_requests
-      .filter((url) => /^https:\/\//i.test(url))
-      .map((url) => {
-        const safe = escapeHtml(url);
-        return `<a href="${safe}">${safe}</a>`;
-      });
-    if (pullRequestLinks.length) summary.addList(pullRequestLinks);
+      .addLink(result.session_id, result.session_html_url);
+    if (result.pull_requests.length) {
+      summary.addList(result.pull_requests.map((url) => `<a href="${url}">${url}</a>`));
+    }
     if (result.final_message) {
-      summary.addHeading('Final message', 4).addQuote(escapeHtml(result.final_message));
+      summary.addHeading('Final message', 4).addQuote(result.final_message);
     }
     await summary.write();
   } catch (error) {

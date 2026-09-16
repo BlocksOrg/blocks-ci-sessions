@@ -300,18 +300,6 @@ describe('logUntrusted', () => {
   });
 });
 
-describe('escapeHtml', () => {
-  it('escapes every HTML metacharacter', async () => {
-    const { escapeHtml } = await import('../index');
-    expect(escapeHtml(`<a href="x">&'</a>`)).toBe('&lt;a href=&quot;x&quot;&gt;&amp;&#39;&lt;/a&gt;');
-  });
-
-  it('leaves ordinary text alone', async () => {
-    const { escapeHtml } = await import('../index');
-    expect(escapeHtml('Reviewed the PR and left 3 comments.')).toBe('Reviewed the PR and left 3 comments.');
-  });
-});
-
 describe('formatDuration', () => {
   it('reports sub-minute budgets in seconds rather than rounding to "0 minutes"', async () => {
     const { formatDuration } = await import('../index');
