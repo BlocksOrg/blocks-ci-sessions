@@ -16,8 +16,10 @@ const THREAD_ID = 'bbbbbbbb-cccc-4ddd-8eee-ffffffffffff';
 const FOLLOW_UP_THREAD_ID = 'cccccccc-dddd-4eee-8fff-000000000000';
 const FINAL_MESSAGE = 'Reviewed the PR and left 3 comments.';
 const PR_URL = 'https://github.com/BlocksOrg/blocks-ci-sessions/pull/1';
-// The href host the action must rebase away from.
-const FOREIGN_BASE = 'https://api.prod.blocks.team';
+// The href host the action must rebase away from. A reserved, non-resolvable
+// name: this only needs to differ from api_base_url, and it must never be a
+// real host.
+const FOREIGN_BASE = 'https://api.example.invalid';
 // Raise this to keep the agent 'working' and exercise the timeout path.
 const POLLS_BEFORE_DONE = Number(process.env.MOCK_POLLS_BEFORE_DONE ?? 2);
 

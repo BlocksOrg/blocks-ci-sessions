@@ -34,7 +34,7 @@ function bool(raw: RawInputs, key: string, fallback: boolean): boolean {
   throw new InputError(`Input "${key}" must be a boolean, got "${raw[key]}".`);
 }
 
-function num(raw: RawInputs, key: string, fallback: number, min: number): number {
+function num(raw: RawInputs, key: string, fallback: number, min: number, max: number): number {
   const value = str(raw, key);
   if (value === '') return fallback;
   const parsed = Number(value);
@@ -44,8 +44,17 @@ function num(raw: RawInputs, key: string, fallback: number, min: number): number
   if (parsed < min) {
     throw new InputError(`Input "${key}" must be at least ${min}, got ${parsed}.`);
   }
+  // Values past setTimeout's 2^31-1 ms limit are clamped to 1 ms by Node,
+  // which would turn the poll loop into a tight loop against the API.
+  if (parsed > max) {
+    throw new InputError(`Input "${key}" must be at most ${max}, got ${parsed}.`);
+  }
   return parsed;
 }
+
+/** GitHub caps a job at 6 hours, so waiting longer than that is meaningless. */
+const MAX_TIMEOUT_MINUTES = 360;
+const MAX_POLL_INTERVAL_SECONDS = 3_600;
 
 function uuid(raw: RawInputs, key: string): string | undefined {
   const value = str(raw, key);
@@ -108,8 +117,8 @@ export function parseInputs(raw: RawInputs): ActionInputs {
     title,
     sessionGroupId: uuid(raw, 'session_group_id'),
     isPrivate: bool(raw, 'is_private', false),
-    timeoutMs: num(raw, 'timeout_minutes', 30, 0.1) * 60_000,
-    pollIntervalMs: num(raw, 'poll_interval_seconds', 5, 1) * 1_000,
+    timeoutMs: num(raw, 'timeout_minutes', 30, 0.1, MAX_TIMEOUT_MINUTES) * 60_000,
+    pollIntervalMs: num(raw, 'poll_interval_seconds', 5, 1, MAX_POLL_INTERVAL_SECONDS) * 1_000,
     failOnTimeout: bool(raw, 'fail_on_timeout', true),
   };
 }

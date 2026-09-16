@@ -1,4 +1,6 @@
 import * as core from '@actions/core';
+import { randomUUID } from 'node:crypto';
+import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { BlocksApiError, BlocksClient } from './client';
 import { InputError, parseInputs, type ActionInputs, type RawInputs } from './inputs';
@@ -26,6 +28,31 @@ function readInputs(): RawInputs {
 }
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Logs text that originated from the agent or the API. The runner treats any
+ * log line starting with `::` as a workflow command (`add-mask`, `error`,
+ * `stop-commands`, ...), so untrusted text is fenced in a stop-commands block
+ * with a random token before it is written.
+ */
+export function logUntrusted(text: string): void {
+  const token = randomUUID();
+  core.info(`::stop-commands::${token}`);
+  core.info(text);
+  core.info(`::${token}::`);
+}
+
+/** The job summary is raw HTML; `@actions/core` does not escape for us. */
+export function escapeHtml(value: string): string {
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  };
+  return value.replace(/[&<>"']/g, (char) => map[char]);
+}
 
 /** `timeout_minutes` accepts fractions, so "0 minutes" is a real possibility. */
 export function formatDuration(ms: number): string {
@@ -83,7 +110,7 @@ export async function run(
   }
 
   onSessionStarted({ session_id: sessionId, thread_id: threadId, session_html_url: sessionHtmlUrl });
-  core.info(`Session ${sessionId} — ${sessionHtmlUrl}`);
+  logUntrusted(`Session ${sessionId} — ${sessionHtmlUrl}`);
 
   if (!finalMessageHref) {
     throw new Error(
@@ -151,14 +178,20 @@ function publish(partial: Partial<RunResult>): void {
 
 async function writeSummary(result: RunResult): Promise<void> {
   try {
+    // Everything below came from the API or the agent, so it is escaped, and
+    // only https links are rendered as anchors.
     const summary = core.summary
       .addHeading('Blocks agent session', 3)
-      .addLink(result.session_id, result.session_html_url);
-    if (result.pull_requests.length) {
-      summary.addList(result.pull_requests.map((url) => `<a href="${url}">${url}</a>`));
-    }
+      .addLink(escapeHtml(result.session_id), escapeHtml(result.session_html_url));
+    const pullRequestLinks = result.pull_requests
+      .filter((url) => /^https:\/\//i.test(url))
+      .map((url) => {
+        const safe = escapeHtml(url);
+        return `<a href="${safe}">${safe}</a>`;
+      });
+    if (pullRequestLinks.length) summary.addList(pullRequestLinks);
     if (result.final_message) {
-      summary.addHeading('Final message', 4).addQuote(result.final_message);
+      summary.addHeading('Final message', 4).addQuote(escapeHtml(result.final_message));
     }
     await summary.write();
   } catch (error) {
@@ -171,6 +204,8 @@ export async function main(): Promise<void> {
   // Mask before anything else can echo it, including input validation errors.
   const apiKey = core.getInput('blocks_api_key');
   if (apiKey) core.setSecret(apiKey);
+  // The client sends the trimmed value, so mask that form as well.
+  if (apiKey.trim() && apiKey.trim() !== apiKey) core.setSecret(apiKey.trim());
 
   let inputs: ActionInputs;
   try {
@@ -210,7 +245,7 @@ export async function main(): Promise<void> {
       return;
     }
 
-    core.info(result.final_message);
+    logUntrusted(result.final_message);
   } catch (error) {
     core.setFailed(describeFailure(error));
   }
@@ -234,7 +269,21 @@ function describeFailure(error: unknown): string {
 // Only auto-run when Node was pointed straight at this bundle; the test suite
 // imports the module instead. `import.meta.main` would be neater but only
 // landed in Node 24.2, and the runner's node24 minor is not ours to pin.
+//
+// Node resolves symlinks when loading the main module, so `import.meta.url` is
+// the real path while `argv[1]` may not be. Compare both forms, otherwise a
+// symlinked action directory would silently skip `main()` and exit 0.
+function isEntrypoint(argv1: string): boolean {
+  const candidates = [argv1];
+  try {
+    candidates.push(realpathSync(argv1));
+  } catch {
+    // Not resolvable; fall through to the literal comparison.
+  }
+  return candidates.some((path) => pathToFileURL(path).href === import.meta.url);
+}
+
 const entrypoint = process.argv[1];
-if (entrypoint && import.meta.url === pathToFileURL(entrypoint).href) {
+if (entrypoint && isEntrypoint(entrypoint)) {
   void main();
 }

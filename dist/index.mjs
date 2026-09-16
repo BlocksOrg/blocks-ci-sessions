@@ -20128,6 +20128,8 @@ function info(message) {
 }
 
 // src/index.ts
+import { randomUUID as randomUUID2 } from "node:crypto";
+import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
 // src/client.ts
@@ -20301,7 +20303,7 @@ function bool(raw, key, fallback) {
   if (["false", "no", "n", "off", "0"].includes(value)) return false;
   throw new InputError(`Input "${key}" must be a boolean, got "${raw[key]}".`);
 }
-function num(raw, key, fallback, min) {
+function num(raw, key, fallback, min, max) {
   const value = str(raw, key);
   if (value === "") return fallback;
   const parsed = Number(value);
@@ -20311,8 +20313,13 @@ function num(raw, key, fallback, min) {
   if (parsed < min) {
     throw new InputError(`Input "${key}" must be at least ${min}, got ${parsed}.`);
   }
+  if (parsed > max) {
+    throw new InputError(`Input "${key}" must be at most ${max}, got ${parsed}.`);
+  }
   return parsed;
 }
+var MAX_TIMEOUT_MINUTES = 360;
+var MAX_POLL_INTERVAL_SECONDS = 3600;
 function uuid(raw, key) {
   const value = str(raw, key);
   if (value === "") return void 0;
@@ -20357,8 +20364,8 @@ function parseInputs(raw) {
     title,
     sessionGroupId: uuid(raw, "session_group_id"),
     isPrivate: bool(raw, "is_private", false),
-    timeoutMs: num(raw, "timeout_minutes", 30, 0.1) * 6e4,
-    pollIntervalMs: num(raw, "poll_interval_seconds", 5, 1) * 1e3,
+    timeoutMs: num(raw, "timeout_minutes", 30, 0.1, MAX_TIMEOUT_MINUTES) * 6e4,
+    pollIntervalMs: num(raw, "poll_interval_seconds", 5, 1, MAX_POLL_INTERVAL_SECONDS) * 1e3,
     failOnTimeout: bool(raw, "fail_on_timeout", true)
   };
 }
@@ -20384,6 +20391,22 @@ function readInputs() {
   return raw;
 }
 var sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+function logUntrusted(text) {
+  const token = randomUUID2();
+  info(`::stop-commands::${token}`);
+  info(text);
+  info(`::${token}::`);
+}
+function escapeHtml(value) {
+  const map = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  };
+  return value.replace(/[&<>"']/g, (char) => map[char]);
+}
 function formatDuration(ms) {
   if (ms < 6e4) return `${Math.round(ms / 1e3)}s`;
   const minutes = ms / 6e4;
@@ -20423,7 +20446,7 @@ async function run(inputs, client, onSessionStarted, deps = {}) {
     pullRequests = session.pull_requests ?? [];
   }
   onSessionStarted({ session_id: sessionId, thread_id: threadId, session_html_url: sessionHtmlUrl });
-  info(`Session ${sessionId} \u2014 ${sessionHtmlUrl}`);
+  logUntrusted(`Session ${sessionId} \u2014 ${sessionHtmlUrl}`);
   if (!finalMessageHref) {
     throw new Error(
       `Session ${sessionId} came back without a final_message link, so there is no thread to wait on. This usually means the session was created but no thread was committed.`
@@ -20479,12 +20502,14 @@ function publish(partial) {
 }
 async function writeSummary(result) {
   try {
-    const summary2 = summary.addHeading("Blocks agent session", 3).addLink(result.session_id, result.session_html_url);
-    if (result.pull_requests.length) {
-      summary2.addList(result.pull_requests.map((url) => `<a href="${url}">${url}</a>`));
-    }
+    const summary2 = summary.addHeading("Blocks agent session", 3).addLink(escapeHtml(result.session_id), escapeHtml(result.session_html_url));
+    const pullRequestLinks = result.pull_requests.filter((url) => /^https:\/\//i.test(url)).map((url) => {
+      const safe = escapeHtml(url);
+      return `<a href="${safe}">${safe}</a>`;
+    });
+    if (pullRequestLinks.length) summary2.addList(pullRequestLinks);
     if (result.final_message) {
-      summary2.addHeading("Final message", 4).addQuote(result.final_message);
+      summary2.addHeading("Final message", 4).addQuote(escapeHtml(result.final_message));
     }
     await summary2.write();
   } catch (error2) {
@@ -20494,6 +20519,7 @@ async function writeSummary(result) {
 async function main() {
   const apiKey = getInput("blocks_api_key");
   if (apiKey) setSecret(apiKey);
+  if (apiKey.trim() && apiKey.trim() !== apiKey) setSecret(apiKey.trim());
   let inputs;
   try {
     inputs = parseInputs(readInputs());
@@ -20523,7 +20549,7 @@ async function main() {
       else warning(message);
       return;
     }
-    info(result.final_message);
+    logUntrusted(result.final_message);
   } catch (error2) {
     setFailed(describeFailure(error2));
   }
@@ -20540,12 +20566,22 @@ Hint: check that "blocks_api_key" is a valid, unexpired workspace API key.`;
   if (error2 instanceof InputError || error2 instanceof Error) return error2.message;
   return String(error2);
 }
+function isEntrypoint(argv1) {
+  const candidates = [argv1];
+  try {
+    candidates.push(realpathSync(argv1));
+  } catch {
+  }
+  return candidates.some((path) => pathToFileURL(path).href === import.meta.url);
+}
 var entrypoint = process.argv[1];
-if (entrypoint && import.meta.url === pathToFileURL(entrypoint).href) {
+if (entrypoint && isEntrypoint(entrypoint)) {
   void main();
 }
 export {
+  escapeHtml,
   formatDuration,
+  logUntrusted,
   main,
   run
 };

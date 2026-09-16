@@ -9,9 +9,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+# The action never uses GITHUB_TOKEN; the agent acts through your Blocks
+# GitHub integration, so nothing beyond read is needed here.
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   run_pull_request:
@@ -49,7 +50,12 @@ jobs:
             the session ${{ needs.run_pull_request.outputs.session_id }}.
             Refer to the commented issues and address them.
 
+      # Outputs come from the agent, so pass them through env rather than
+      # interpolating ${{ }} straight into the shell.
       - name: Report
+        env:
+          SESSION_URL: ${{ steps.fix.outputs.session_html_url }}
+          PULL_REQUESTS: ${{ steps.fix.outputs.pull_requests }}
         run: |
-          echo "Autofix session: ${{ steps.fix.outputs.session_html_url }}"
-          echo "Pull requests touched: ${{ steps.fix.outputs.pull_requests }}"
+          echo "Autofix session: $SESSION_URL"
+          echo "Pull requests touched: $PULL_REQUESTS"

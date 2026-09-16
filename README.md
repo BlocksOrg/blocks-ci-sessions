@@ -32,7 +32,10 @@ the session id so later jobs can chain off it.
     agent: claude
     prompt: Review pull request ${{ github.event.pull_request.html_url }}.
 
-- run: echo "Session ${{ steps.review.outputs.session_id }} said ${{ steps.review.outputs.final_message }}"
+- run: echo "Session $SESSION_ID said: $FINAL_MESSAGE"
+  env:
+    SESSION_ID: ${{ steps.review.outputs.session_id }}
+    FINAL_MESSAGE: ${{ steps.review.outputs.final_message }}
 ```
 
 See [`examples/`](./examples) for complete, copy-paste workflows.
@@ -59,8 +62,8 @@ so anything you can do there you can do from a workflow.
 | `title` | | — | Session title, max 200 characters. Creation only. |
 | `session_group_id` | | — | Group the session under an existing session group. Creation only. |
 | `is_private` | | `false` | Hide the session from other workspace members. |
-| `timeout_minutes` | | `30` | How long to wait for the final message. |
-| `poll_interval_seconds` | | `5` | Seconds between polls. Minimum `1`. |
+| `timeout_minutes` | | `30` | How long to wait for the final message. Maximum `360`. |
+| `poll_interval_seconds` | | `5` | Seconds between polls. Between `1` and `3600`. |
 | `fail_on_timeout` | | `true` | `false` warns and continues instead of failing the step. |
 | `api_base_url` | | `https://api.blocks.team` | Override the REST API base URL. |
 
