@@ -7,15 +7,22 @@
   </a>
 </p>
 
-# Blocks Agent Session
+# Blocks Agent Sessions
 
 [![CI](https://github.com/BlocksOrg/blocks-ci-sessions/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/BlocksOrg/blocks-ci-sessions/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/BlocksOrg/blocks-ci-sessions?label=release)](https://github.com/BlocksOrg/blocks-ci-sessions/releases/latest)
-[![GitHub Marketplace](https://img.shields.io/badge/marketplace-Blocks%20Agent%20Session-blue?logo=github)](https://github.com/marketplace/actions/blocks-agent-session)
+[![GitHub Marketplace](https://img.shields.io/badge/marketplace-Blocks%20Agent%20Sessions-blue?logo=github)](https://github.com/marketplace/actions/blocks-agent-sessions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 
-Starts a [Blocks](https://blocks.team) agent session from a GitHub workflow, waits for the
-agent's final message, and exposes the session id so later jobs can chain off it.
+Run cloud coding agent sessions from your CI workflows. A single step starts a
+[Blocks](https://blocks.team) agent session, waits for the agent's final message, and exposes
+the session id so later jobs can chain off it.
+
+- **Your favourite agent.** Claude Code, Codex, Kimi Code, OpenCode, Cursor or Gemini.
+- **Your credentials, or ours.** Bring your own subscriptions and API keys, or use Blocks
+  inference.
+- **Your choice of model.** Frontier models such as Fable and Astra, or open-source models like
+  Kimi 3.0 and GLM 5.3, including inside Claude Code.
 
 ```yaml
 - id: review
