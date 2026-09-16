@@ -1,8 +1,5 @@
 name: 'Blocks Agent Sessions'
-description: >-
-  Run cloud coding agent sessions (Claude Code, Codex, Gemini, OpenCode, Cursor,
-  Kimi Code) from CI. Waits for the agent's final message and exposes the session
-  id so later jobs can chain off it.
+description: 'Run cloud coding agent sessions (Claude, Codex, Gemini, Cursor, and more) from CI and chain later jobs off the result.'
 author: 'Blocks'
 
 branding:
