@@ -119,6 +119,11 @@ jobs:
             Refer to the commented issues and address them.
 ```
 
+> [!TIP]
+> Mentioning a session id in a prompt is enough. The agent **automatically pulls that
+> session's context** (transcript, findings, touched PRs), so you never have to copy results
+> from one job into the next.
+
 See [`examples/pr-review-autofix.yml`](./examples/pr-review-autofix.yml) for the full workflow.
 
 `needs:` only runs the dependent job when the upstream job **succeeded**. If you want the
