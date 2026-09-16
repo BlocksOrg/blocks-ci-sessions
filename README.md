@@ -1,4 +1,18 @@
+<p align="center">
+  <a href="https://blocks.team">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset=".github/assets/blocks-logo-dark.svg">
+      <img alt="Blocks" src=".github/assets/blocks-logo-light.svg" width="220">
+    </picture>
+  </a>
+</p>
+
 # Blocks Agent Session
+
+[![CI](https://github.com/BlocksOrg/blocks-ci-sessions/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/BlocksOrg/blocks-ci-sessions/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/BlocksOrg/blocks-ci-sessions?label=release)](https://github.com/BlocksOrg/blocks-ci-sessions/releases/latest)
+[![GitHub Marketplace](https://img.shields.io/badge/marketplace-Blocks%20Agent%20Session-blue?logo=github)](https://github.com/marketplace/actions/blocks-agent-session)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 
 Starts a [Blocks](https://blocks.team) agent session from a GitHub workflow, waits for the
 agent's final message, and exposes the session id so later jobs can chain off it.
@@ -18,8 +32,14 @@ See [`examples/`](./examples) for complete, copy-paste workflows.
 
 ## Setup
 
-1. Create a workspace API key in the Blocks dashboard.
-2. Add it as a repository or organisation secret named `BLOCKS_API_KEY`.
+1. Create a workspace API key in the Blocks dashboard under **Settings → API Keys**. The
+   [REST API quick start](https://docs.blocks.team/rest-api/quick-start) walks through it.
+2. Add the key as a repository or organisation secret named `BLOCKS_API_KEY`.
+3. Copy a workflow from [`examples/`](./examples) into `.github/workflows/`, or add the step
+   above to an existing one.
+
+The action calls the same `POST /rest/v1/sessions` endpoint described in the quick start,
+so anything you can do there you can do from a workflow.
 
 ## Inputs
 
