@@ -3,7 +3,7 @@ import { InputError, parseInputs } from '../inputs';
 
 const UUID = '11111111-2222-4333-8444-555555555555';
 
-const base = { blocks_api_key: 'key', prompt: 'do the thing' };
+const base = { blocks_api_key: 'key', prompt: 'do the thing', agent: 'claude' };
 
 describe('parseInputs', () => {
   it('applies the documented defaults', () => {
@@ -11,18 +11,31 @@ describe('parseInputs', () => {
     expect(inputs).toMatchObject({
       apiKey: 'key',
       prompt: 'do the thing',
+      agent: 'claude',
       apiBaseUrl: 'https://api.blocks.team',
       isPrivate: false,
       failOnTimeout: true,
       timeoutMs: 30 * 60_000,
       pollIntervalMs: 5_000,
     });
-    expect(inputs.agent).toBeUndefined();
     expect(inputs.agentId).toBeUndefined();
   });
 
-  it('leaves agent unset rather than defaulting it', () => {
-    expect(parseInputs({ ...base, agent: '   ' }).agent).toBeUndefined();
+  it('requires agent or agent_id when creating a session', () => {
+    expect(() => parseInputs({ ...base, agent: '' })).toThrow(/requires an agent/);
+    expect(() => parseInputs({ ...base, agent: '   ' })).toThrow(/requires an agent/);
+  });
+
+  it('accepts agent_id in place of agent', () => {
+    const inputs = parseInputs({ ...base, agent: '', agent_id: UUID });
+    expect(inputs.agent).toBeUndefined();
+    expect(inputs.agentId).toBe(UUID);
+  });
+
+  it('does not require an agent when resuming a session', () => {
+    const inputs = parseInputs({ ...base, agent: '', session_id: UUID });
+    expect(inputs.agent).toBeUndefined();
+    expect(inputs.sessionId).toBe(UUID);
   });
 
   it('normalises agent casing', () => {
@@ -58,7 +71,7 @@ describe('parseInputs', () => {
   });
 
   it('accepts uuid identifiers', () => {
-    const inputs = parseInputs({ ...base, session_id: UUID, session_group_id: UUID });
+    const inputs = parseInputs({ ...base, agent: '', session_id: UUID, session_group_id: UUID });
     expect(inputs.sessionId).toBe(UUID);
     expect(inputs.sessionGroupId).toBe(UUID);
   });

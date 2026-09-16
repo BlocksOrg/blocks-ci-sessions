@@ -90,12 +90,17 @@ describe('run — creating a session', () => {
     });
   });
 
-  it('omits agent_name entirely when no agent was supplied', async () => {
+  it('sends agent_id instead of agent_name when a custom agent was supplied', async () => {
     const client = stubClient();
-    await run(inputs(), client, () => {}, fakeClock());
+    await run(
+      inputs({ agentId: '99999999-8888-4777-8666-555555555555' }),
+      client,
+      () => {},
+      fakeClock(),
+    );
     const body = vi.mocked(client.createSession).mock.calls[0][0];
+    expect(body).toHaveProperty('agent_id', '99999999-8888-4777-8666-555555555555');
     expect(body).not.toHaveProperty('agent_name');
-    expect(body).not.toHaveProperty('agent_id');
   });
 
   it('forwards the optional creation fields', async () => {

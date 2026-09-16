@@ -20337,6 +20337,11 @@ function parseInputs(raw) {
       `Input "agent" must be one of ${AGENT_ALIASES.join(", ")} \u2014 got "${agentRaw}". For a custom workspace agent use "agent_id" instead.`
     );
   }
+  if (!sessionId && !agentRaw && !agentId) {
+    throw new InputError(
+      `Creating a session requires an agent: set "agent" to one of ${AGENT_ALIASES.join(", ")}, or set "agent_id" to a custom workspace agent UUID. (Neither is needed when resuming via "session_id".)`
+    );
+  }
   const apiBaseUrl = (str(raw, "api_base_url") || "https://api.blocks.team").replace(/\/+$/, "");
   const title = str(raw, "title") || void 0;
   if (title && title.length > 200) {
