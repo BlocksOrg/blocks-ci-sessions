@@ -1,0 +1,51 @@
+name: Bug report
+description: The action misbehaves in a workflow
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search existing issues first. Keep it short and specific.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What went wrong, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Workflow step
+      description: The `uses:` step as written. Reference the secret, never paste the key.
+      render: yaml
+      placeholder: |
+        - uses: BlocksOrg/blocks-ci-sessions@v1
+          with:
+            blocks_api_key: ${{ secrets.BLOCKS_API_KEY }}
+            agent: claude
+            prompt: ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Step logs
+      description: The relevant part of the step output. The key is masked automatically, but check before pasting.
+      render: text
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: Action version
+      description: The tag or SHA in your `uses:` line, e.g. `v1`, `v1.0.0`, or a commit.
+    validations:
+      required: true
+  - type: input
+    id: runner
+    attributes:
+      label: Runner
+      description: e.g. `ubuntu-latest`, or self-hosted and the OS.
+    validations:
+      required: false

@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest an enhancement to the action
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: What are you trying to do in your workflow that the action makes hard or impossible today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: A new input or output, a behaviour change, an example — whatever you have in mind.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and this isn't a duplicate.
+          required: true
+        - label: I checked the README and this isn't already possible with existing inputs.
+          required: true

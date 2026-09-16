@@ -1,0 +1,43 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  analyze:
+    # Both languages in one job, deliberately not a matrix: the check-run is
+    # always named "CodeQL", whether it runs or is skipped, so it can be a
+    # required status check. A matrix would rename it to "CodeQL (<language>)"
+    # the moment it starts running for real.
+    name: CodeQL
+    # Code scanning on a private or internal repository needs GitHub Advanced
+    # Security. Skip until the repo is public: a skipped job still posts a
+    # check-run, which counts as passing for a required status check.
+    if: github.event.repository.visibility == 'public'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript,actions
+          # dist/ is a generated bundle of src/ plus third-party code; scanning
+          # it would only duplicate (and misattribute) findings from src/.
+          config: |
+            paths-ignore:
+              - dist
+      - uses: github/codeql-action/analyze@v4
