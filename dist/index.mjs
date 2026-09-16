@@ -20339,7 +20339,7 @@ function parseInputs(raw) {
   }
   if (!sessionId && !agentRaw && !agentId) {
     throw new InputError(
-      `Creating a session requires an agent: set "agent" to one of ${AGENT_ALIASES.join(", ")}, or set "agent_id" to a custom workspace agent UUID. (Neither is needed when resuming via "session_id".)`
+      `Input "agent" is required when creating a session \u2014 set it to one of ${AGENT_ALIASES.join(", ")}. (Not needed when resuming via "session_id".)`
     );
   }
   const apiBaseUrl = (str(raw, "api_base_url") || "https://api.blocks.team").replace(/\/+$/, "");
@@ -20531,7 +20531,7 @@ async function main() {
 function describeFailure(error2) {
   if (error2 instanceof BlocksApiError && error2.status === 422) {
     return `${error2.message}
-Hint: "agent" must be one of ${AGENT_ALIASES.join(", ")}, or set "agent_id" to a custom workspace agent UUID. The API has no workspace-default fallback, so one of them is required.`;
+Hint: "agent" must be one of ${AGENT_ALIASES.join(", ")}. The API has no workspace-default fallback, so it is required when creating a session.`;
   }
   if (error2 instanceof BlocksApiError && error2.status === 401) {
     return `${error2.message}

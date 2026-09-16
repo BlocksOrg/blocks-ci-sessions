@@ -87,9 +87,8 @@ export function parseInputs(raw: RawInputs): ActionInputs {
   }
   if (!sessionId && !agentRaw && !agentId) {
     throw new InputError(
-      'Creating a session requires an agent: set "agent" to one of ' +
-        `${AGENT_ALIASES.join(', ')}, or set "agent_id" to a custom workspace agent UUID. ` +
-        '(Neither is needed when resuming via "session_id".)',
+      `Input "agent" is required when creating a session — set it to one of ${AGENT_ALIASES.join(', ')}. ` +
+        '(Not needed when resuming via "session_id".)',
     );
   }
 

@@ -21,9 +21,9 @@ describe('parseInputs', () => {
     expect(inputs.agentId).toBeUndefined();
   });
 
-  it('requires agent or agent_id when creating a session', () => {
-    expect(() => parseInputs({ ...base, agent: '' })).toThrow(/requires an agent/);
-    expect(() => parseInputs({ ...base, agent: '   ' })).toThrow(/requires an agent/);
+  it('requires agent when creating a session', () => {
+    expect(() => parseInputs({ ...base, agent: '' })).toThrow(/"agent" is required/);
+    expect(() => parseInputs({ ...base, agent: '   ' })).toThrow(/"agent" is required/);
   });
 
   it('accepts agent_id in place of agent', () => {

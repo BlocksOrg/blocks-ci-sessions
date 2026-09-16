@@ -27,8 +27,7 @@ See [`examples/`](./examples) for complete, copy-paste workflows.
 | --- | --- | --- | --- |
 | `blocks_api_key` | ✅ | — | Workspace API key. Masked in logs via `core.setSecret`. |
 | `prompt` | ✅ | — | The message sent to the agent. |
-| `agent` | ✅ on create | — | One of `claude`, `codex`, `gemini`, `opencode`, `cursor`, `kimi`, `sisyphus`. |
-| `agent_id` | ✅ on create | — | UUID of a custom workspace agent. Mutually exclusive with `agent`. |
+| `agent` | ✅ | — | One of `claude`, `codex`, `gemini`, `opencode`, `cursor`, `kimi`, `sisyphus`. Not needed when resuming via `session_id`. |
 | `session_id` | | — | Resume: post `prompt` as a follow-up to an existing session. |
 | `title` | | — | Session title, max 200 characters. Creation only. |
 | `session_group_id` | | — | Group the session under an existing session group. Creation only. |
@@ -40,15 +39,15 @@ See [`examples/`](./examples) for complete, copy-paste workflows.
 
 ### Choosing an agent
 
-Every run that **creates** a session must set exactly one of `agent` or `agent_id`. The
-Blocks API rejects a session without one, and the action checks this before making any
-request so a misconfigured workflow fails fast with a clear message.
+Every run that **creates** a session must set `agent`. The Blocks API rejects a session
+without one, and the action checks this before making any request so a misconfigured workflow
+fails fast with a clear message.
 
 There is deliberately **no default agent**: a hard-coded one would silently override whatever
 your workspace has configured.
 
-`agent`/`agent_id` are ignored when `session_id` is set; a resumed session keeps the agent it
-was created with.
+`agent` is ignored when `session_id` is set; a resumed session keeps the agent it was created
+with.
 
 ## Outputs
 
