@@ -99,6 +99,16 @@ describe('parseInputs', () => {
     expect(() => parseInputs({ ...base, timeout_minutes: 'soon' })).toThrow(/number/);
   });
 
+  it('caps the timeout at the six-hour job limit', () => {
+    expect(() => parseInputs({ ...base, timeout_minutes: '361' })).toThrow(/at most 360/);
+    expect(parseInputs({ ...base, timeout_minutes: '360' }).timeoutMs).toBe(360 * 60_000);
+  });
+
+  it('caps the poll interval so it can never overflow setTimeout', () => {
+    expect(() => parseInputs({ ...base, poll_interval_seconds: '3601' })).toThrow(/at most 3600/);
+    expect(parseInputs({ ...base, poll_interval_seconds: '3600' }).pollIntervalMs).toBe(3_600_000);
+  });
+
   it('strips trailing slashes from api_base_url', () => {
     expect(parseInputs({ ...base, api_base_url: 'http://localhost:9000//' }).apiBaseUrl).toBe(
       'http://localhost:9000',

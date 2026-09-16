@@ -271,6 +271,35 @@ describe('run — resuming a session', () => {
   });
 });
 
+describe('logUntrusted', () => {
+  it('fences the text in a stop-commands block so it cannot inject workflow commands', async () => {
+    const core = await import('@actions/core');
+    const { logUntrusted } = await import('../index');
+    vi.mocked(core.info).mockClear();
+
+    logUntrusted('::add-mask::e');
+
+    const lines = vi.mocked(core.info).mock.calls.map((call) => call[0] as string);
+    expect(lines).toHaveLength(3);
+    expect(lines[0]).toMatch(/^::stop-commands::[0-9a-f-]{36}$/);
+    expect(lines[1]).toBe('::add-mask::e');
+    const token = lines[0].slice('::stop-commands::'.length);
+    expect(lines[2]).toBe(`::${token}::`);
+  });
+
+  it('uses a fresh token every time', async () => {
+    const core = await import('@actions/core');
+    const { logUntrusted } = await import('../index');
+    vi.mocked(core.info).mockClear();
+
+    logUntrusted('a');
+    logUntrusted('b');
+
+    const lines = vi.mocked(core.info).mock.calls.map((call) => call[0] as string);
+    expect(lines[0]).not.toBe(lines[3]);
+  });
+});
+
 describe('formatDuration', () => {
   it('reports sub-minute budgets in seconds rather than rounding to "0 minutes"', async () => {
     const { formatDuration } = await import('../index');

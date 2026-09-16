@@ -45,13 +45,14 @@ inputs:
     required: false
     default: 'false'
   timeout_minutes:
-    description: 'How long to wait for the agent final message before giving up.'
+    description: 'How long to wait for the agent final message before giving up. Maximum 360.'
     required: false
     default: '30'
   poll_interval_seconds:
     description: >-
-      Seconds between final-message polls. The API allows 100 requests per minute
-      per key across all concurrent jobs, so raise this if you fan out widely.
+      Seconds between final-message polls, from 1 to 3600. The API allows 100
+      requests per minute per key across all concurrent jobs, so raise this if
+      you fan out widely.
     required: false
     default: '5'
   fail_on_timeout:

@@ -2,5 +2,7 @@ node_modules/
 coverage/
 *.log
 .DS_Store
+.env
+.env.*
 
 # dist is intentionally committed — GitHub Actions runs the bundle directly.

@@ -15,9 +15,12 @@ permissions:
 jobs:
   major-tag:
     name: Move the floating major tag
+    # A pre-release must never become what `@v1` resolves to.
+    if: ${{ !github.event.release.prerelease }}
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
 
@@ -33,6 +36,12 @@ jobs:
             exit 1
           fi
           MAJOR="v${BASH_REMATCH[1]}"
+          # Only ever point the floating tag at something that went through
+          # main's review and required checks.
+          if ! git merge-base --is-ancestor "$RELEASE_TAG" origin/main; then
+            echo "::error::$RELEASE_TAG is not on main; refusing to move $MAJOR to it."
+            exit 1
+          fi
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git tag -f "$MAJOR" "$RELEASE_TAG"
